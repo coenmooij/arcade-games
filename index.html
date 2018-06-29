@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Arcade Games</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css"
+          integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css"
+          integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">
+    <script src="rainbowvis.js"></script>
+</head>
+<body>
+
+<div id="pong">
+    <h1 class="text-center">Pong Premium Deluxe (Free version)</h1>
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <div class="text-center">
+        <button id="toggleGameButton" onclick="toggleGame()" class="btn btn-lg btn-success">
+            <i id="playIcon" class="fa fa-play"></i>
+        </button>
+    </div>
+    <div id="hidden">
+        <i id="pauseIcon" class="fa fa-pause"></i>
+    </div>
+</div>
+
+<script>
+    var canvas;
+    var canvasContext;
+    var paused = true;
+    var ball = {x: 400, y: 300, radius: 10, xSpeed: -3, ySpeed: 3};
+    var ballColor = 'white';
+    var turn = 0;
+    var mouse = {x: 400, y: 300};
+    var paddleOne = {x: 15, y: 300, width: 20, height: 100};
+    var paddleTwo = {x: 785, y: 300, width: 20, height: 100};
+    var scoreOne = 0;
+    var scoreTwo = 0;
+    var rainbow = new Rainbow();
+
+    const MAX_PADDLE_SPEED = 5;
+    const MAX_VERTICAL_SPEED = 10;
+
+    window.onload = function () {
+        canvas = document.getElementById('canvas');
+        canvasContext = canvas.getContext('2d');
+        console.log('starting game...');
+        draw();
+        canvas.addEventListener('mousemove', function (event) {
+            mouseMove(event);
+        });
+        let fps = 60;
+        setInterval('update()', 1000 / fps);
+    };
+
+    function toggleGame() {
+        var button = document.getElementById("toggleGameButton");
+        var hidden = document.getElementById('hidden');
+        var pauseIcon = document.getElementById('pauseIcon');
+        var playIcon = document.getElementById('playIcon');
+
+        if (paused) {
+            hidden.appendChild(playIcon);
+            button.appendChild(pauseIcon);
+        } else {
+            hidden.appendChild(pauseIcon);
+            button.appendChild(playIcon);
+        }
+
+        paused = !paused;
+    }
+
+    function mouseMove(event) {
+        let rectangle = canvas.getBoundingClientRect();
+        let root = document.documentElement;
+        mouse.x = event.clientX - rectangle.left - root.scrollLeft;
+        mouse.y = event.clientY - rectangle.top - root.scrollTop;
+    }
+
+    function update() {
+        if (!paused) {
+            move();
+            draw();
+        }
+    }
+
+    function score() {
+        ball.x < 400 ? scoreTwo++ : scoreOne++;
+        let direction = (turn % 2) > 0 ? -1 : 1;
+        paused = true;
+        ball = {x: 400, y: 300, radius: 10, xSpeed: direction * 3, ySpeed: Math.random() * 8 - 4};
+        turn++;
+        unpauseAfterTime();
+    }
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function unpauseAfterTime() {
+        await sleep(700);
+        paused = false;
+    }
+
+    function move() {
+        movePaddle(paddleOne, mouse.y);
+        movePaddle(paddleTwo, ball.y);
+        moveBall();
+    }
+
+        function movePaddle(paddle, target) {
+        if (target > paddle.y) {
+            let delta = target - paddle.y;
+            paddle.y += delta > MAX_PADDLE_SPEED ? MAX_PADDLE_SPEED : delta;
+            if (paddle.y > 600 - paddle.height / 2) {
+                paddle.y = 600 - paddle.height / 2;
+            }
+        } else {
+            let delta = paddle.y - target;
+            paddle.y -= delta > MAX_PADDLE_SPEED ? MAX_PADDLE_SPEED : delta;
+            if (paddle.y < paddle.height / 2) {
+                paddle.y = paddle.height / 2;
+            }
+        }
+
+    }
+
+    function moveBall() {
+        bounce();
+
+        ball.x += ball.xSpeed;
+        ball.y += ball.ySpeed;
+    }
+
+    function bounce() {
+        if (ball.x < 35) {
+            if (paddleInPosition(paddleOne)) {
+                ball.xSpeed = -ball.xSpeed;
+                ball.x = 35;
+                handleVerticalBounce(paddleOne);
+            } else {
+                score();
+            }
+        }
+        if (ball.x > 765) {
+            if (paddleInPosition(paddleTwo)) {
+                ball.xSpeed = -ball.xSpeed;
+                ball.x = 765;
+                handleVerticalBounce(paddleTwo);
+            } else {
+                score();
+            }
+        }
+
+        if (ball.y <= 10 || ball.y >= 590) {
+            ball.ySpeed = -ball.ySpeed;
+        }
+    }
+
+    function handleVerticalBounce(paddle) {
+        ball.ySpeed -= paddle.y - ball.y;
+        if (ball.ySpeed < -MAX_VERTICAL_SPEED) {
+            ball.ySpeed = -MAX_VERTICAL_SPEED;
+        } else if (ball.ySpeed > MAX_VERTICAL_SPEED) {
+            ball.ySpeed = MAX_VERTICAL_SPEED;
+        }
+    }
+
+    function paddleInPosition(paddle) {
+        return (ball.y + ball.radius >= paddle.y - paddle.height / 2 && ball.y - ball.radius <= paddle.y + paddle.height / 2);
+
+    }
+
+    function draw() {
+        drawField();
+        drawScore();
+        drawPaddles();
+        drawBall();
+    }
+
+    function drawField() {
+        canvasContext.fillStyle = 'black';
+        canvasContext.fillRect(0, 0, canvas.width, canvas.height);
+
+        canvasContext.strokeStyle = '#ccc';
+        canvasContext.beginPath();
+        canvasContext.setLineDash([10, 10]);
+        canvasContext.moveTo(400, 0);
+        canvasContext.lineTo(400, 600);
+        canvasContext.moveTo(401, 0);
+        canvasContext.lineTo(401, 600);
+        canvasContext.stroke();
+    }
+
+    function drawScore() {
+        canvasContext.fillStyle = '#ccc';
+        canvasContext.font = '50px monospace';
+        canvasContext.fillText(scoreOne < 10 ? '0' + scoreOne : scoreOne, 300, 100);
+        canvasContext.fillText(scoreTwo < 10 ? '0' + scoreTwo : scoreTwo, 440, 100);
+    }
+
+    function drawBall() {
+        ballColor = '#' + rainbow.colorAt(Math.floor(Date.now() / 14) % 100);
+        console.log(ballColor);
+        canvasContext.fillStyle = ballColor;
+        canvasContext.fillRect(ball.x - ball.radius, ball.y - ball.radius, ball.radius * 2, ball.radius * 2);
+    }
+
+    function drawPaddles() {
+        canvasContext.fillStyle = 'white';
+        let paddles = [paddleOne, paddleTwo];
+        paddles.forEach(function (paddle) {
+            canvasContext.fillRect(paddle.x - paddle.width / 2, paddle.y - paddle.height / 2, paddle.width, paddle.height);
+        });
+    }
+
+</script>
+
+<style>
+    #hidden {
+        visibility: hidden;
+    }
+
+    #pong {
+        padding: 2rem 0;
+        margin: auto;
+        display: block;
+        width: 800px;
+    }
+
+    #pong h1 {
+        margin-bottom: 1rem;
+    }
+</style>
+
+</body>
+</html>
