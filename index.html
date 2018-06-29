@@ -48,6 +48,9 @@
         canvas.addEventListener('mousemove', function (event) {
             mouseMove(event);
         });
+        canvas.addEventListener('touchmove', function (event) {
+            touchMove(event);
+        });
         let fps = 60;
         setInterval('update()', 1000 / fps);
     };
@@ -74,6 +77,14 @@
         let root = document.documentElement;
         mouse.x = event.clientX - rectangle.left - root.scrollLeft;
         mouse.y = event.clientY - rectangle.top - root.scrollTop;
+    }
+
+    function touchMove(event) {
+        let rectangle = canvas.getBoundingClientRect();
+        let root = document.documentElement;
+        let touch = event.changedTouches[0];
+        mouse.x = touch.clientX - rectangle.left - root.scrollLeft;
+        mouse.y = touch.clientY - rectangle.top - root.scrollTop;
     }
 
     function update() {
@@ -107,7 +118,7 @@
         moveBall();
     }
 
-        function movePaddle(paddle, target) {
+    function movePaddle(paddle, target) {
         if (target > paddle.y) {
             let delta = target - paddle.y;
             paddle.y += delta > MAX_PADDLE_SPEED ? MAX_PADDLE_SPEED : delta;
