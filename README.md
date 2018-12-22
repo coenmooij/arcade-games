@@ -1,5 +1,5 @@
-# arcade-games
+# Pong
 
-This is a simple version of the game pong in a one-page html file.
+This is a simple version of the game pong in a one-page html file plus some simple javascript.
 
-It is meant to be played on desktop but it works (yay!) on mobile.
+It is meant to be played on desktop but it sort of works on mobile.
